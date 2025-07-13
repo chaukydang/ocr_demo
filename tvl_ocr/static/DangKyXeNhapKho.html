@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TVL - Hệ thống quản lý kho bãi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#3b82f6",
+            secondary: "#64748b",
+            success: "#10b981",
+            danger: "#ef4444",
+            warning: "#f59e0b",
+            info: "#06b6d4",
+          },
+          zIndex: {
+            '60': '60',
+            '1001': '1001',
+            'max': '9999',
+          },
+          zIndex: {
+            '60': '60',
+            '1001': '1001',
+            'max': '9999',
+          }
+        },
+      },
+    };
+  </script>
+  <style>
+    .sidebar {
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .sidebar.collapsed {
+      width: 0px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .nav-text {
+      display: none;
+    }
+
+    .sidebar.collapsed .logo-text {
+      display: none;
+    }
+
+    .sidebar.collapsed>div {
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+
+    .sidebar #show-sidebar {
+      display: none;
+    }
+
+    .sidebar #close-sidebar {
+      display: inline;
+    }
+
+    .sidebar.collapsed+.content {
+      margin-left: 0px;
+    }
+
+    .sidebar.collapsed #show-sidebar {
+      display: inline;
+    }
+
+    .sidebar.collapsed #close-sidebar {
+      display: none;
+    }
+
+    .sidebar.collapsed nav {
+      padding: 0.5rem;
+    }
+
+    .sidebar.collapsed nav li>a>i {
+      margin-right: 0;
+    }
+
+    .content {
+      transition: all 0.3s ease;
+    }
+
+    .table-container {
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .chart-container {
+      height: 300px;
+    }
+
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    #user-menu {
+      transition: all 0.2s ease;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .sidebar.collapsed {
+        width: 70px;
+        overflow: hidden;
+      }
+
+      .sidebar.collapsed+.content {
+        margin-left: 10px;
+      }
+    }
+  </style>
+  <!-- insert libs here -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- insert libs here -->
+  <!-- insert style here -->
+  <style>
+    .custom-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .section-title {
+      position: relative;
+      padding-left: 1rem;
+    }
+
+    .section-title:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: #3b82f6;
+      border-radius: 2px;
+    }
+
+    .photo-upload {
+      border: 2px dashed #d1d5db;
+      transition: all 0.3s ease;
+    }
+
+    .photo-upload:hover {
+      border-color: #3b82f6;
+      background-color: #f8fafc;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      /* Chiều rộng scrollbar */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #73a7fc;
+      border-radius: 4px;
+      /* Màu nền */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #888;
+      /* Màu của thanh kéo */
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+  </style>
+  <!-- insert style here -->
+</head>
+
+<body class="bg-gray-50">
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="absolute md:static sidebar bg-white shadow-md w-64 flex flex-col ">
+      <div class="p-4 flex items-center justify-between border-b">
+        <div class="flex items-center">
+          <img class="fas fa-warehouse text-primary text-2xl w-10" src="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/logo.png"></img>
+          <span class="logo-text font-bold text-xl text-blue-800">WarehouseTVL</span>
+        </div>
+        <button id="toggle-sidebar" class="text-gray-500 hover:text-gray-700">
+          <i id="close-sidebar" class="fas fa-chevron-left"></i>
+          <i id="show-sidebar" class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <nav class="p-4">
+          <!-- Đăng ký xe -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Đăng ký xe
+            </p>
+            <ul>
+              <li>
+                <a href="/QuanLyDangKyXe.html"
+                  class="flex items-center p-2 bg-blue-50 text-blue-600 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-truck-fast fa-fw mr-3"></i>
+                  <span class="nav-text">Quản lý đăng ký xe</span>
+                </a>
+              </li>
+              <li>
+                <a href="/nhapkho.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-arrow-down fa-fw mr-3"></i>
+                  <span class="nav-text">Nhập kho</span>
+                </a>
+              </li>
+              <li>
+                <a href="/xuatkho.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-arrow-up fa-fw mr-3"></i>
+                  <span class="nav-text">Xuất kho</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+
+          <!-- Quản lý kho -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Kho bãi
+            </p>
+            <ul>
+              <li>
+                <a href="/QuanLyKho.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-exchange-alt fa-fw mr-3"></i>
+                  <span class="nav-text">Quản lý kho</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Danh mục -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Danh mục
+            </p>
+            <ul>
+              <li>
+                <a href="/DanhMucKho.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-warehouse fa-fw mr-3"></i>
+                  <span class="nav-text">Kho</span>
+                </a>
+              </li>
+              <li>
+                <a href="/DanhMucNhanVien.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-user fa-fw mr-3"></i>
+                  <span class="nav-text">Nhân viên</span>
+                </a>
+              </li>
+              <li>
+                <a href="/DanhMucDonVitinh.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-balance-scale fa-fw mr-3"></i>
+                  <span class="nav-text">Đơn vị tính</span>
+                </a>
+              </li>
+              <li>
+                <a href="/DanhMucXe.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-truck fa-fw mr-3"></i>
+                  <span class="nav-text">Xe</span>
+                </a>
+              </li>
+              <li>
+                <a href="/DanhMucHangHoa.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-cubes fa-fw mr-3"></i>
+                  <span class="nav-text">Hàng hóa</span>
+                </a>
+              </li>
+              <li>
+                <a href="/DanhMucCan.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-weight-hanging fa-fw mr-3"></i>
+                  <span class="nav-text">Trạm cân</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Khách hàng -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Khách hàng
+            </p>
+            <ul>
+              <li>
+                <a href="/QuanLyKhachHang.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-users fa-fw mr-3"></i>
+                  <span class="nav-text">Quản lý khách hàng</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Hợp đồng - Thanh toán -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Hợp đồng - Thanh toán
+            </p>
+            <ul>
+              <li>
+                <a href="/QuanLyHopDong.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-file-contract fa-fw mr-3"></i>
+                  <span class="nav-text">Hợp đồng</span>
+                </a>
+              </li>
+              <li>
+                <a href="/tonghopdoanhthutheokhachhang.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-hand-holding-dollar fa-fw mr-3"></i>
+                  <span class="nav-text">Doanh thu theo KH</span>
+                </a>
+              </li>
+              <li>
+                <a href="/CongNo.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-money-check-dollar fa-fw mr-3"></i>
+                  <span class="nav-text">Công nợ</span>
+                </a>
+              </li>
+              <li>
+                <a href="/ChiTietCongNo.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-credit-card fa-fw mr-3"></i>
+                  <span class="nav-text">Công nợ theo KH</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          
+
+          <!-- Báo cáo tổng quan -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Báo cáo tổng quan
+            </p>
+            <ul>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotongquan/baocaohangngay.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-clipboard-list fa-fw mr-3"></i>
+                  <span class="nav-text">Báo cáo hàng ngày</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Báo cáo tài chính -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Báo cáo tài chính
+            </p>
+            <ul>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotaichinh/tongquan.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-gauge fa-fw mr-3"></i>
+                  <span class="nav-text">Tổng quan</span>
+                </a>
+              </li>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotaichinh/chiphi.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-chart-line fa-fw mr-3"></i>
+                  <span class="nav-text">Chi phí</span>
+                </a>
+              </li>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotaichinh/congno.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-file-invoice-dollar fa-fw mr-3"></i>
+                  <span class="nav-text">Công nợ</span>
+                </a>
+              </li>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotaichinh/doanhthu.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-piggy-bank fa-fw mr-3"></i>
+                  <span class="nav-text">Doanh thu</span>
+                </a>
+              </li>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotaichinh/loinhuan.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-sack-dollar fa-fw mr-3"></i>
+                  <span class="nav-text">Lợi nhuận</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Báo cáo tồn kho -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Báo cáo tồn kho
+            </p>
+            <ul>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotonkho/tonkhotheokho.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-house-chimney-window fa-fw mr-3"></i>
+                  <span class="nav-text">Tồn kho theo kho</span>
+                </a>
+              </li>
+              <li>
+                <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/baocaoquantri/baocaotonkho/tonkhotheokhachhang.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-person-shelter fa-fw mr-3"></i>
+                  <span class="nav-text">Tồn kho theo KH</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Quản trị hệ thống -->
+          <div class="mb-6">
+            <p class="text-xs uppercase text-blue-500 font-semibold mb-2 nav-text">
+              Quản trị hệ thống
+            </p>
+            <ul>
+              <li>
+                <a href="/QuanLyNguoiDung.html"
+                  class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-user-cog fa-fw mr-3"></i>
+                  <span class="nav-text">Quản lý người dùng</span>
+                </a>
+              </li>
+              <li>
+                <a href="/quanlyrole.html" class="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                  <i class="fas fa-users-cog fa-fw mr-3"></i>
+                  <span class="nav-text">Quản lý role</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content flex-1 overflow-auto">
+      <header class="bg-white shadow-sm p-4 flex justify-between items-center pt-[0.5rem] pb-[0.7rem] ml-4 rounded">
+        <i class="fas fa-bars text-xl inline md:hidden" id="menu-btn"></i>
+        <h1 class="text-xl font-semibold text-blue-800 uppercase">
+          Đăng ký xe nhập kho
+        </h1>
+        <div class="flex item-right gap-4">
+          <div class="hidden md:flex items-center space-x-4">
+            <div class="relative">
+              <input type="text" placeholder="Tìm kiếm..."
+                class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+            <button class="p-2 text-gray-500 hover:text-gray-700">
+              <i class="fas fa-bell"></i>
+            </button>
+          </div>
+
+          <div>
+            <div class="flex items-center cursor-pointer" id="user-menu-button">
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" class="w-8 h-8 rounded-full mr-2" />
+              <div class="hidden md:block nav-text">
+                <p class="text-sm font-medium text-gray-800">Admin</p>
+                <p class="text-xs text-gray-500">Quản trị hệ thống</p>
+              </div>
+              <i class="fas fa-chevron-down ml-1 text-gray-500 text-xs"></i>
+            </div>
+            <!-- Dropdown menu -->
+            <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+              <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/ChangePassword.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Thay đổi
+                mật khẩu</a>
+              <a href="../../front-end/Tách%209%20Tab%20HTML/git/TVL_FrontEnd_Demo/index.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Đăng xuất</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="p-4">
+        <!-- insert code here -->
+        <div class="">
+          <!-- Form Title -->
+
+
+          <!-- Form Content -->
+              <!-- Thông tin xe và tài xế -->
+              <div class="mb-8 bg-white rounded-lg shadow-md custom-shadow overflow-hidden px-6 py-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-4 section-title">THÔNG TIN XE VÀ TÀI XẾ</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="licensePlate" class="block text-sm font-medium text-gray-700 mb-1">Biển số xe</label>
+                    <input list="licensePlates" id="licensePlate" name="licensePlate" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                    <datalist id="licensePlates">
+                      <option value="29A-11111">
+                      <option value="29A-22222">
+                      <option value="29A-33333">
+                      <option value="29A-44444">
+                      <option value="29A-55555">
+                    </datalist>
+                  </div>
+                  <div>
+                    <label for="driverName" class="block text-sm font-medium text-gray-700 mb-1">Tên tài xế</label>
+                    <input list="driverNames" id="driverName" name="driverName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                    <datalist id="driverNames">
+                      <option value="Nguyễn Văn A">
+                      <option value="Nguyễn Văn B">
+                      <option value="Nguyễn Văn C">
+                      <option value="Nguyễn Văn D">
+                      <option value="Nguyễn Văn E">
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Thông tin cân tại cảng -->
+              <div class="mb-8 bg-white rounded-lg shadow-md custom-shadow overflow-hidden px-6 py-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-4 section-title">THÔNG TIN CÂN TẠI CẢNG</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh phiếu cân cảng</label>
+                    <div id="photo-upload" class="photo-upload rounded-lg p-4 text-center cursor-pointer">
+                      <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
+                      <p class="text-sm text-gray-500">Nhấn để tải lên hình ảnh phiếu cân</p>
+                      <input type="file" id="portWeightImage" name="portWeightImage" class="hidden" accept="image/*">
+                    </div>
+                  </div>
+                  <div>
+                    <label for="shipName" class="block text-sm font-medium text-gray-700 mb-1">Tên tàu</label>
+                    <input type="text" id="shipName" name="shipName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="trailerNumber" class="block text-sm font-medium text-gray-700 mb-1">Số mooc</label>
+                    <input type="text" id="trailerNumber" name="trailerNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="portWeightFull" class="block text-sm font-medium text-gray-700 mb-1">Cân xe hàng (kg)</label>
+                    <input type="number" id="portWeightFull" name="portWeightFull" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="portWeightEmpty" class="block text-sm font-medium text-gray-700 mb-1">Cân xe rỗng (kg)</label>
+                    <input type="number" id="portWeightEmpty" name="portWeightEmpty" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="portWeightCargo" class="block text-sm font-medium text-gray-700 mb-1">Trọng lượng hàng (kg)</label>
+                    <input type="number" id="portWeightCargo" name="portWeightCargo" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" readonly>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Thông tin cân tại kho -->
+              <div class="mb-8 bg-white rounded-lg shadow-md custom-shadow overflow-hidden px-6 py-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-4 section-title">THÔNG TIN CÂN TẠI KHO</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="warehouseWeightIn" class="block text-sm font-medium text-gray-700 mb-1">Trọng lượng xe vào (kg)</label>
+                    <input type="number" id="warehouseWeightIn" name="warehouseWeightIn" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="timeIn" class="block text-sm font-medium text-gray-700 mb-1">Giờ xe vào</label>
+                    <input type="datetime-local" id="timeIn" name="timeIn" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="warehouseWeightOut" class="block text-sm font-medium text-gray-700 mb-1">Trọng lượng xe ra (kg)</label>
+                    <input type="number" id="warehouseWeightOut" name="warehouseWeightOut" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="timeOut" class="block text-sm font-medium text-gray-700 mb-1">Giờ xe ra</label>
+                    <input type="datetime-local" id="timeOut" name="timeOut" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="warehouseWeightCargo" class="block text-sm font-medium text-gray-700 mb-1">Trọng lượng hàng (kg)</label>
+                    <input type="number" id="warehouseWeightCargo" name="warehouseWeightCargo" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" readonly>
+                  </div>
+                  <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                    <textarea id="notes" name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Debug section (hidden by default) -->
+              <div id="debug-section" class="mb-8 bg-gray-100 rounded-lg shadow-md overflow-hidden px-6 py-4" style="display: none;">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">DEBUG - Raw OCR Text</h3>
+                <textarea id="debug-text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" rows="10" readonly></textarea>
+                <div class="mt-4">
+                  <h4 class="text-md font-medium text-gray-700 mb-2">Parsed Data:</h4>
+                  <pre id="parsed-data" class="bg-gray-50 p-3 rounded text-sm overflow-auto max-h-40"></pre>
+                </div>
+              </div>
+
+              <!-- Form Actions -->
+              <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" onclick="toggleDebug()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                  Debug OCR
+                </button>
+                <button type="button" onclick="window.history.back()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  Hủy bỏ
+                </button>
+                <button type="button" onclick="addTruckRegistration()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  Lưu thông tin
+                </button>
+                <button type="button" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                  In phiếu cân
+                </button>
+              </div>
+        </div>
+          <!-- insert code here -->
+      </main>
+    </div>
+  </div>
+
+  <!-- insert script here -->
+  <script>
+
+
+      // API Configuration
+      const API_CONFIG = {
+      OCR_ENDPOINT: 'http://localhost:8000/ocr/parse',
+      TIMEOUT: 3000000000000
+    };
+
+      // Store raw OCR data for debugging
+      let lastOCRData = null;
+
+      // Tính toán trọng lượng hàng tự động
+      document.getElementById('portWeightFull').addEventListener('input', calculatePortCargoWeight);
+      document.getElementById('portWeightEmpty').addEventListener('input', calculatePortCargoWeight);
+      document.getElementById('warehouseWeightIn').addEventListener('input', calculateWarehouseCargoWeight);
+      document.getElementById('warehouseWeightOut').addEventListener('input', calculateWarehouseCargoWeight);
+
+
+      function calculatePortCargoWeight() {
+      const full = parseFloat(document.getElementById('portWeightFull').value) || 0;
+      const empty = parseFloat(document.getElementById('portWeightEmpty').value) || 0;
+      const cargoWeight = full - empty;
+      const rounded = cargoWeight > 0 ? cargoWeight.toFixed(3).replace(',', '.') : '0';
+      document.getElementById('warehouseWeightCargo').value = rounded;
+    }
+
+      function calculateWarehouseCargoWeight() {
+      const weightIn = parseFloat(document.getElementById('warehouseWeightIn').value) || 0;
+      const weightOut = parseFloat(document.getElementById('warehouseWeightOut').value) || 0;
+      const cargoWeight = weightIn - weightOut;
+      const rounded = cargoWeight > 0 ? cargoWeight.toFixed(3).replace(',', '.') : '0';
+      document.getElementById('warehouseWeightCargo').value = rounded;
+    }
+
+
+      // Parse OCR text to extract structured data
+      function parseOCRText(text) {
+      console.log('Parsing OCR text:', text);
+
+      const extractedData = {};
+
+      const patterns = {
+      bien_so_xe: /\*\*Biển số:\*\*\s*([A-Z0-9\-]+)/i,
+      ten_tau: /\*\*Tàu:\*\*\s*([^\n\*]+)/i,
+      so_mooc: /\*\*Kho\/bãi:\*\*\s*([^\n\*]+)/i,
+      can_xe_hang: /\*\*Cân xe hàng:\*\*\s*([\d\.,]+)/i,
+      can_xe_rong: /\*\*Cân xe rỗng:\*\*\s*([\d\.,]+)/i,
+      trong_luong_hang: /\*\*Trọng lượng hàng:\*\*\s*([\d\.,]+)/i,
+      lai_xe: /\*\*Lái xe:\*\*\s*([^\n\*]+)/i
+    };
+
+      Object.entries(patterns).forEach(([key, pattern]) => {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+      let value = match[1].trim();
+      if (['can_xe_hang', 'can_xe_rong', 'trong_luong_hang'].includes(key)) {
+      // Normalize số thập phân kiểu Việt: 23,390 => 23.390
+      value = value.replace(',', '.');
+    }
+      extractedData[key] = value;
+    }
+    });
+
+      console.log('Extracted data:', extractedData);
+      return extractedData;
+    }
+
+
+      // Image Upload Functionality
+      function initImageUpload() {
+      const photoUpload = document.getElementById('photo-upload');
+      const fileInput = document.getElementById('portWeightImage');
+
+      // Click handler for upload area
+      photoUpload.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+      // File change handler
+      fileInput.addEventListener('change', handleImageUpload);
+    }
+
+      async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+      showError('Vui lòng chọn file hình ảnh hợp lệ');
+      return;
+    }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+      showError('Kích thước file không được vượt quá 10MB');
+      return;
+    }
+
+      const photoUpload = document.getElementById('photo-upload');
+
+      try {
+      // Show uploading state
+      updateUploadUI('uploading', 'Đang xử lý ảnh...', file.name);
+
+      // Send to backend
+      const result = await sendImageToBackend(file);
+
+      // Store for debugging
+      lastOCRData = result;
+
+      // Parse the text response
+      let extractedData = {};
+      if (result.text) {
+      extractedData = parseOCRText(result.text);
+      // Store parsed data for debugging
+      lastOCRData.parsed = extractedData;
+    }
+
+      // Show success state
+      updateUploadUI('success', 'Xử lý ảnh thành công', file.name);
+
+      // Fill form with extracted data
+      fillFormWithOCRData(extractedData);
+
+      // Show success notification
+      const fieldsCount = Object.keys(extractedData).length;
+      Swal.fire({
+      icon: 'success',
+      title: 'Thành công!',
+      text: `Đã nhận dạng và điền ${fieldsCount} thông tin từ ảnh`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    } catch (error) {
+      console.error('Image upload error:', error);
+      updateUploadUI('error', 'Lỗi xử lý ảnh', file.name);
+      showError(error.message || 'Không thể xử lý ảnh. Vui lòng thử lại.');
+    }
+    }
+
+      async function sendImageToBackend(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
+      try {
+      const response = await fetch(API_CONFIG.OCR_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal
+    });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server error: ${response.status} - ${errorText}`);
+    }
+
+      const result = await response.json();
+      return result;
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+      throw new Error('Timeout: Quá trình xử lý ảnh mất quá nhiều thời gian');
+    }
+
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+    }
+
+      throw error;
+    }
+    }
+
+      function updateUploadUI(state, message, fileName) {
+      const photoUpload = document.getElementById('photo-upload');
+
+      // Reset classes
+      photoUpload.className = 'photo-upload rounded-lg p-4 text-center cursor-pointer';
+
+      let icon, iconColor;
+
+      switch (state) {
+      case 'uploading':
+      photoUpload.classList.add('uploading');
+      icon = 'fas fa-spinner fa-spin';
+      iconColor = 'text-yellow-500';
+      break;
+      case 'success':
+      photoUpload.classList.add('success');
+      icon = 'fas fa-check-circle';
+      iconColor = 'text-green-500';
+      break;
+      case 'error':
+      photoUpload.classList.add('error');
+      icon = 'fas fa-exclamation-circle';
+      iconColor = 'text-red-500';
+      break;
+      default:
+      icon = 'fas fa-camera';
+      iconColor = 'text-gray-400';
+    }
+
+      photoUpload.innerHTML = `
+        <i class="${icon} text-3xl ${iconColor} mb-2"></i>
+        <p class="text-sm font-medium">${message}</p>
+        ${fileName ? `<p class="text-xs text-gray-500 mt-1">${fileName}</p>` : ''}
+        <p class="text-xs text-gray-400 mt-2">Nhấn để thay đổi</p>
+      `;
+    }
+
+      function fillFormWithOCRData(data) {
+      console.log('Filling form with OCR data:', data);
+
+      // Mapping extracted data to form input IDs
+      const fieldMappings = {
+      'licensePlate': data.bien_so_xe,
+      'shipName': data.ten_tau,
+      'trailerNumber': data.so_mooc,
+      'portWeightFull': data.can_xe_hang,
+      'portWeightEmpty': data.can_xe_rong,
+      'portWeightCargo': data.trong_luong_hang
+    };
+
+      let fieldsUpdated = 0;
+
+
+      // Với các trường số
+      const numericFields = ['portWeightFull', 'portWeightEmpty', 'portWeightCargo'];
+
+      Object.entries(fieldMappings).forEach(([fieldId, value]) => {
+      if (value && value.toString().trim() !== '') {
+      const field = document.getElementById(fieldId);
+      if (field) {
+      // Làm tròn nếu là trường số
+      const isNumeric = numericFields.includes(fieldId);
+      field.value = value.trim();  // KHÔNG parseFloat, KHÔNG làm tròn
+
+
+      // Highlight field
+      field.classList.add('field-updated');
+      setTimeout(() => field.classList.remove('field-updated'), 2000);
+      field.dispatchEvent(new Event('input'));
+    }
+    }
+    });
+      // Recalculate weights after filling
+      setTimeout(() => {
+      calculatePortCargoWeight();
+      calculateWarehouseCargoWeight();
+    }, 100);
+
+      console.log(`Updated ${fieldsUpdated} fields from OCR data`);
+    }
+
+      function showError(message) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: message,
+        confirmButtonColor: '#3b82f6'
+      });
+    }
+
+      function toggleDebug() {
+      const debugSection = document.getElementById('debug-section');
+      if (debugSection.style.display === 'none') {
+      debugSection.style.display = 'block';
+      if (lastOCRData) {
+      if (lastOCRData.text) {
+      document.getElementById('debug-text').value = lastOCRData.text;
+    }
+      if (lastOCRData.parsed) {
+      document.getElementById('parsed-data').textContent = JSON.stringify(lastOCRData.parsed, null, 2);
+    }
+    }
+    } else {
+      debugSection.style.display = 'none';
+    }
+    }
+
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', function() {
+      initImageUpload();
+
+      // Set default datetime values
+      const now = new Date();
+      const today = now.toISOString().substr(0, 10);
+      const timeString = now.toTimeString().substr(0, 5);
+
+      document.getElementById('timeIn').value = `${today}T${timeString}`;
+      document.getElementById('timeOut').value = `${today}T${timeString}`;
+    });
+
+      // Form submission
+      function addTruckRegistration() {
+      const portWeightCargo = document.getElementById('portWeightCargo').value;
+      const warehouseWeightCargo = document.getElementById('warehouseWeightCargo').value;
+
+      if (portWeightCargo === '' || warehouseWeightCargo === '') {
+      Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: 'Vui lòng nhập đầy đủ thông tin cân xe và trọng lượng hàng.',
+    });
+      return;
+    }
+
+      if (parseFloat(portWeightCargo) <= 0 || parseFloat(warehouseWeightCargo) <= 0) {
+      Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: 'Trọng lượng hàng không được nhỏ hơn hoặc bằng 0.',
+    });
+      return;
+    }
+
+      const weightDifference = Math.abs(parseFloat(portWeightCargo) - parseFloat(warehouseWeightCargo));
+      if (weightDifference > 100) {
+      const warningMessage = `Trọng lượng hàng tại cảng và kho quá chênh lệch.<br>
+          ${parseFloat(portWeightCargo) > parseFloat(warehouseWeightCargo) ? 'Hàng tại kho nhẹ hơn hàng tại cảng' : 'Hàng tại kho nặng hơn hàng tại cảng'}
+          <strong>${weightDifference}</strong>kg.<br>Bạn có chắc chắn muốn tiếp tục?`;
+
+      Swal.fire({
+      icon: 'warning',
+      title: 'Cảnh báo',
+      html: warningMessage,
+      showCancelButton: true,
+      confirmButtonText: 'Tiếp tục',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+      submitForm();
+    }
+    });
+      return;
+    }
+
+      submitForm();
+    }
+
+      function submitForm() {
+      // Collect all form data
+      const formData = {
+      licensePlate: document.getElementById('licensePlate').value,
+      driverName: document.getElementById('driverName').value,
+      shipName: document.getElementById('shipName').value,
+      trailerNumber: document.getElementById('trailerNumber').value,
+      portWeightFull: document.getElementById('portWeightFull').value,
+      portWeightEmpty: document.getElementById('portWeightEmpty').value,
+      portWeightCargo: document.getElementById('portWeightCargo').value,
+      warehouseWeightIn: document.getElementById('warehouseWeightIn').value,
+      warehouseWeightOut: document.getElementById('warehouseWeightOut').value,
+      warehouseWeightCargo: document.getElementById('warehouseWeightCargo').value,
+      timeIn: document.getElementById('timeIn').value,
+      timeOut: document.getElementById('timeOut').value,
+      notes: document.getElementById('notes').value
+    };
+
+      console.log('Form data to submit:', formData);
+
+      // Here you would send formData to your backend
+      // Example: await fetch('/api/truck-registration', { method: 'POST', body: JSON.stringify(formData) })
+
+      Swal.fire({
+      icon: 'success',
+      title: 'Thành công!',
+      text: 'Đã lưu thông tin đăng ký xe',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    }
+
+      // Sidebar functionality
+      const sidebar = document.querySelector(".sidebar");
+      if (window.innerWidth < 768) {
+      sidebar.classList.add("collapsed");
+    }
+
+      document.getElementById("toggle-sidebar").addEventListener("click", function() {
+      document.querySelector(".sidebar").classList.toggle("collapsed");
+    });
+
+      document.getElementById("menu-btn").addEventListener("click", function() {
+      document.querySelector(".sidebar").classList.toggle("collapsed");
+    });
+
+      // User menu toggle
+      document.getElementById("user-menu-button").addEventListener("click", function(e) {
+      e.stopPropagation();
+      document.getElementById("user-menu").classList.toggle("hidden");
+    });
+
+      document.addEventListener('click', function() {
+      document.getElementById("user-menu").classList.add("hidden");
+    });
+    // Sample data for demonstration
+    const customers = [
+      { id: 1, name: "Công ty A" },
+      { id: 2, name: "Công ty B" },
+      { id: 3, name: "Công ty C" }
+    ];
+
+    const contracts = {
+      1: [
+        { id: 101, name: "HĐ-001/2023", customerId: 1 },
+        { id: 102, name: "HĐ-002/2023", customerId: 1 }
+      ],
+      2: [
+        { id: 201, name: "HĐ-003/2023", customerId: 2 }
+      ],
+      3: [
+        { id: 301, name: "HĐ-004/2023", customerId: 3 },
+        { id: 302, name: "HĐ-005/2023", customerId: 3 }
+      ]
+    };
+
+    const products = {
+      101: [
+        { id: 1001, name: "Xi măng", type: "hàng bao", unit: "bao", quantity: 1000 },
+        { id: 1002, name: "Cát", type: "hàng xá", unit: "m3", quantity: 500 }
+      ],
+      102: [
+        { id: 1003, name: "Sắt thép", type: "hàng bao", unit: "kg", quantity: 2000 }
+      ],
+      201: [
+        { id: 2001, name: "Gạch", type: "hàng bao", unit: "viên", quantity: 5000 }
+      ],
+      301: [
+        { id: 3001, name: "Gỗ", type: "hàng xá", unit: "m3", quantity: 300 }
+      ],
+      302: [
+        { id: 3002, name: "Sơn", type: "hàng bao", unit: "thùng", quantity: 200 }
+      ]
+    };
+
+    // Initialize customer dropdown
+    function initCustomers() {
+      const select = document.getElementById('customer-select');
+      customers.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer.id;
+        option.textContent = customer.name;
+        select.appendChild(option);
+      });
+    }
+
+    // Load contracts for selected customer
+    function loadCustomerContracts() {
+      const customerId = document.getElementById('customer-select').value;
+      const contractSelect = document.getElementById('contract-select');
+
+      // Reset contract select
+      contractSelect.innerHTML = '<option value="">-- Chọn hợp đồng --</option>';
+      contractSelect.disabled = !customerId;
+      document.getElementById('add-product-btn').disabled = true;
+      document.getElementById('product-table-body').innerHTML = '';
+
+      if (customerId) {
+        const customerContracts = contracts[customerId] || [];
+        customerContracts.forEach(contract => {
+          const option = document.createElement('option');
+          option.value = contract.id;
+          option.textContent = contract.name;
+          contractSelect.appendChild(option);
+        });
+      }
+    }
+
+    // Load products for selected contract
+    function loadContractProducts() {
+      const contractId = document.getElementById('contract-select').value;
+      document.getElementById('add-product-btn').disabled = !contractId;
+      document.getElementById('product-table-body').innerHTML = '';
+    }
+
+    // Track added product IDs
+    const addedProductIds = new Set();
+
+    // Add product to table
+    function addProductToTable() {
+      const contractId = document.getElementById('contract-select').value;
+      if (!contractId) return;
+
+      const contractProducts = products[contractId] || [];
+      if (contractProducts.length === 0) return;
+
+      // // Filter out already added products
+      // const availableProducts = contractProducts.filter(p => !addedProductIds.has(p.id));
+      // if (availableProducts.length === 0) {
+      //   Swal.fire('Thông báo', 'Tất cả sản phẩm đã được thêm', 'info');
+      //   return;
+      // }
+
+      // Show product selection dialog with multi-select
+      Swal.fire({
+        title: 'Chọn sản phẩm',
+        html: `
+          <div class="max-h-60 overflow-y-auto">
+            ${contractProducts.map(product => `
+              <div class="flex items-center mb-2">
+                <input type="checkbox" id="product-${product.id}" value="${product.id}" class="mr-2" 
+                  ${addedProductIds.has(product.id) ? 'checked' : ''} 
+                  ${addedProductIds.has(product.id) ? '' : ''}>
+                <label for="product-${product.id}">${product.name}</label>
+              </div>
+            `).join('')}
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Thêm',
+        cancelButtonText: 'Hủy',
+        preConfirm: () => {
+          const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
+          if (checkedBoxes.length === 0) {
+            Swal.showValidationMessage('Vui lòng chọn ít nhất 1 sản phẩm');
+            return false;
+          }
+          return Array.from(checkedBoxes).map(box => box.value);
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const tableBody = document.getElementById('product-table-body');
+
+          // First get all product IDs from the dialog
+          const allProductIds = contractProducts.map(p => p.id);
+          const selectedProductIds = result.value.map(id => parseInt(id));
+
+          // Clear and rebuild the table based on selections
+          tableBody.innerHTML = '';
+          addedProductIds.clear();
+
+          // Add selected products to table
+          contractProducts.forEach(product => {
+            if (selectedProductIds.includes(product.id)) {
+              const row = document.createElement('tr');
+
+              row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${product.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <select class="border rounded px-2 py-1 product-type" onchange="updateUnitOptions(this)">
+                    <option value="hàng xá" ${product.type === 'hàng xá' ? 'selected' : ''}>Hàng xá</option>
+                    <option value="hàng bao" ${product.type === 'hàng bao' ? 'selected' : ''}>Hàng bao</option>
+                  </select>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <select class="border rounded px-2 py-1 product-unit">
+                    ${product.type === 'hàng bao'
+                  ? `<option value="bao jumbo 1 tấn">Bao jumbo 1 tấn</option>
+                         <option value="bao 100kg">Bao 100kg</option>
+                         <option value="bao 50kg">Bao 50kg</option>`
+                  : `<option value="tấn">Tấn</option>
+                         <option value="kg">Kg</option>`}
+                  </select>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <input type="number" class="border rounded px-2 py-1 w-20" value="1" min="1" max="${product.quantity}">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <button onclick="removeProduct(this, ${product.id})" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              `;
+
+              tableBody.appendChild(row);
+              addedProductIds.add(product.id);
+            }
+          });
+        }
+      });
+    }
+
+    // Update unit options when product type changes
+    function updateUnitOptions(selectElement) {
+      const row = selectElement.closest('tr');
+      const unitSelect = row.querySelector('.product-unit');
+      const isBulk = selectElement.value === 'hàng xá';
+
+      unitSelect.innerHTML = isBulk
+        ? `<option value="tấn">Tấn</option>
+           <option value="kg">Kg</option>`
+        : `<option value="bao jumbo 1 tấn">Bao jumbo 1 tấn</option>
+           <option value="bao 100kg">Bao 100kg</option>
+           <option value="bao 50kg">Bao 50kg</option>`;
+    }
+
+    // Remove product from table and selected products
+    function removeProduct(button, productId) {
+      button.closest('tr').remove();
+      addedProductIds.delete(productId);
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function () {
+      initCustomers();
+      addedProductIds.clear();
+
+      // Event listeners
+      document.getElementById('add-product-btn').addEventListener('click', addProductToTable);
+    });
+
+    // Đặt ngày mặc định cho các trường ngày tháng
+    document.addEventListener('DOMContentLoaded', () => {
+      const now = new Date();
+      const today = now.toISOString().substr(0, 10);
+      const timeString = now.toTimeString().substr(0, 5);
+
+      // Đặt giờ vào/ra mặc định là giờ hiện tại
+      document.getElementById('timeIn').value = `${today}T${timeString}`;
+      document.getElementById('timeOut').value = `${today}T${timeString}`;
+    });
+
+    // Hàm thêm đăng ký xe
+    function addTruckRegistration() {
+      const portWeightCargo = document.getElementById('portWeightCargo').value;
+      const warehouseWeightCargo = document.getElementById('warehouseWeightCargo').value;
+      if (portWeightCargo === '' || warehouseWeightCargo === '') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Vui lòng nhập đầy đủ thông tin cân xe và trọng lượng hàng.',
+        });
+        return;
+      } else if (parseFloat(portWeightCargo) <= 0 || parseFloat(warehouseWeightCargo) <= 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Trọng lượng hàng không được nhỏ hơn hoặc bằng 0.',
+        });
+        return;
+      } else if (Math.abs(parseFloat(portWeightCargo) - parseFloat(warehouseWeightCargo)) > 100) {
+        var warningMessage = 'Trọng lượng hàng tại cảng và kho quá chênh lệch.<br>'
+          + (parseFloat(portWeightCargo) > parseFloat(warehouseWeightCargo) ? 'Hàng tại kho nhẹ hơn hàng tại cảng ' : 'Hàng tại kho nặng hơn hàng tại cảng ')
+          + '<strong>' + Math.abs(parseFloat(portWeightCargo) - parseFloat(warehouseWeightCargo)) + '</strong>kg.<br>Bạn có chắc chắn muốn tiếp tục?';
+        Swal.fire({
+          icon: 'warning',
+          title: 'Cảnh báo',
+          html: warningMessage,
+          showCancelButton: true,
+          showConfirmButton: true,
+          confirmButtonText: 'Tiếp tục',
+          reverseButtons: true
+        });
+        return;
+      }
+
+    }
+  </script>
+
+  <!-- insert script here -->
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const sidebar = document.querySelector(".sidebar");
+    if (window.innerWidth < 768) {
+      sidebar.classList.add("collapsed");
+    }
+    // Toggle sidebar
+    document
+      .getElementById("toggle-sidebar")
+      .addEventListener("click", function () {
+        document.querySelector(".sidebar").classList.toggle("collapsed");
+      });
+    document
+      .getElementById("menu-btn")
+      .addEventListener("click", function () {
+        document.querySelector(".sidebar").classList.toggle("collapsed");
+      });
+
+    // Toggle user menu
+    document
+      .getElementById("user-menu-button")
+      .addEventListener("click", function (e) {
+        e.stopPropagation();
+        document.getElementById("user-menu").classList.toggle("hidden");
+      });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function () {
+      document.getElementById("user-menu").classList.add("hidden");
+    });
+  </script>
+</body>
+
+</html>
